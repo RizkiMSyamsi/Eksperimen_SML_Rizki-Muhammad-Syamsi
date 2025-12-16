@@ -55,8 +55,8 @@ def preprocess_data(input_path: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    input_csv = "../Sales Transaction v.4a.csv"
-    output_csv = "Sales Transaction v.4a_preprocessing.csv"
+    input_csv = "../Sales-Transaction-v.4a.csv"
+    output_csv = "Sales-Transaction-v.4a_preprocessing.csv"
 
     df_final = preprocess_data(input_csv)
     df_final.to_csv(output_csv, index=False)
