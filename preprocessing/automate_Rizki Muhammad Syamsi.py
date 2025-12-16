@@ -1,51 +1,58 @@
 # automate_Rizki-Muhammad-Syamsi.py
 
-import sys
-from pathlib import Path
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
+
 def preprocess_data(input_path: str) -> pd.DataFrame:
+    # ================= LOAD DATA =================
     df = pd.read_csv(input_path)
 
+    # ================= CLEANING =================
     df = df.drop_duplicates()
+
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df = df.dropna(subset=['Date'])
-    df['CustomerNo'] = df['CustomerNo'].fillna("Unknown").astype(str)
+
     df = df[df['Quantity'] > 0]
     df = df[df['Price'] > 0]
 
-    df['TotalValue'] = df['Price'] * df['Quantity']
-
+    # ================= OUTLIER HANDLING (IQR) =================
     def remove_outliers_iqr(data, col):
         Q1 = data[col].quantile(0.25)
         Q3 = data[col].quantile(0.75)
         IQR = Q3 - Q1
-        return data[(data[col] >= Q1 - 1.5 * IQR) &
-                    (data[col] <= Q3 + 1.5 * IQR)]
+        lower = Q1 - 1.5 * IQR
+        upper = Q3 + 1.5 * IQR
+        return data[(data[col] >= lower) & (data[col] <= upper)]
 
-    for col in ['Price', 'Quantity', 'TotalValue']:
+    for col in ['Price', 'Quantity']:
         df = remove_outliers_iqr(df, col)
 
-    df['CustomerNo_enc'] = LabelEncoder().fit_transform(df['CustomerNo'])
-    df['ProductNo_enc'] = LabelEncoder().fit_transform(df['ProductNo'])
-    df = pd.get_dummies(df, columns=['Country'])
+    # ================= FEATURE SELECTION =================
+    # Fitur relevan untuk prediksi harga
+    df = df[['Price', 'Quantity', 'Country', 'ProductNo']]
 
+    # ================= ENCODING =================
+    df['Country'] = LabelEncoder().fit_transform(df['Country'])
+    df['ProductNo'] = LabelEncoder().fit_transform(df['ProductNo'])
+
+    # ================= SCALING =================
     scaler = StandardScaler()
-    df[['Price_scaled', 'Quantity_scaled', 'TotalValue_scaled']] = scaler.fit_transform(
-        df[['Price', 'Quantity', 'TotalValue']]
-    )
+    df[['Quantity']] = scaler.fit_transform(df[['Quantity']])
 
-    df_final = df.select_dtypes(include=['int64', 'float64']).fillna(0)
-    return df_final
+    return df
 
 
+# ================= MAIN =================
 if __name__ == "__main__":
-    input_csv = sys.argv[1]
-    output_csv = sys.argv[2]
+    input_csv = "Sales Transaction v.4a_preprocessing.csv"
+    output_csv = "Sales Transaction v.4a.csv"
 
-    df_processed = preprocess_data(input_csv)
-    Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
-    df_processed.to_csv(output_csv, index=False)
+    df_final = preprocess_data(input_csv)
+    df_final.to_csv(output_csv, index=False)
 
-    print("✅ Preprocessing selesai, file disimpan di:", output_csv)
+    print(" Preprocessing selesai")
+    print(" Input :", input_csv)
+    print(" Output:", output_csv)
+    print(" Kolom akhir:", list(df_final.columns))
