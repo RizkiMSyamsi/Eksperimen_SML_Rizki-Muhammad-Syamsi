@@ -19,9 +19,6 @@ def preprocess_data(input_path: str) -> pd.DataFrame:
     # ================= DATA CLEANING =================
     df = df.drop_duplicates()
 
-    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-    df = df.dropna(subset=['Date'])
-
     df = df[df['Quantity'] > 0]
     df = df[df['Price'] > 0]
 
